@@ -2,6 +2,8 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import tarfile
+import portage
+from portage.dbapi import bintree
 from portage import os
 from portage.const import SUPPORTED_XPAK_EXTENSIONS, SUPPORTED_GPKG_EXTENSIONS
 from portage.exception import InvalidBinaryPackageFormat
@@ -10,6 +12,9 @@ from portage.util import writemsg
 
 
 def get_binpkg_format(binpkg_path, check_file=False, remote=False):
+    invalid_errors = bintree.binarytree(
+        pkgdir=portage.settings["PKGDIR"], settings=portage.settings
+    ).invalid_errors
     if binpkg_path.endswith(SUPPORTED_XPAK_EXTENSIONS):
         file_ext_format = "xpak"
     elif binpkg_path.endswith(SUPPORTED_GPKG_EXTENSIONS):
@@ -53,9 +58,10 @@ def get_binpkg_format(binpkg_path, check_file=False, remote=False):
     except Exception as err:
         # We got many different exceptions here, so have to catch all of them.
         file_format = None
-        writemsg(
-            colorize("ERR", f"Error reading binpkg '{binpkg_path}': {err}"),
-        )
+        if invalid_errors:
+            writemsg(
+                colorize("ERR", f"Error reading binpkg '{binpkg_path}': {err}"),
+            )
         raise InvalidBinaryPackageFormat(f"Error reading binpkg '{binpkg_path}': {err}")
 
     if file_format is None:

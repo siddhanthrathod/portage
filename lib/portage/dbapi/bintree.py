@@ -486,6 +486,7 @@ class binarytree:
         self._additional_pkgs = {}
         self.invalids = []
         self.invalid_paths: dict[str, list[str]] = {}
+        self.invalid_errors: bool = True
         self.settings = settings
         self._pkg_paths = {}
         self._populating = False
@@ -823,6 +824,7 @@ class binarytree:
         @type add_repos: sequence
         """
 
+        self.invalid_errors = invalid_errors
         if self._populating:
             return
 
@@ -840,8 +842,7 @@ class binarytree:
         try:
             update_pkgindex = self._populate_local(
                 reindex="pkgdir-index-trusted" not in self.settings.features
-                or force_reindex,
-                invalid_errors=invalid_errors,
+                or force_reindex
             )
 
             if update_pkgindex and self.dbapi.writable:
@@ -884,7 +885,7 @@ class binarytree:
 
         self.populated = True
 
-    def _populate_local(self, reindex=True, invalid_errors=True):
+    def _populate_local(self, reindex=True):
         """
         Populates the binarytree with local package metadata.
 
@@ -899,6 +900,7 @@ class binarytree:
         # the Packages file will not be needlessly re-written due to
         # missing digests.
         minimum_keys = self._pkgindex_keys.difference(self._pkgindex_hashes)
+        invalid_errors = self.invalid_errors
 
         if "binpkg-request-signature" in self.settings.features:
             gpkg_only = True
@@ -1085,14 +1087,13 @@ class binarytree:
                                 _("\n!!! Invalid binary package: '%s'\n") % full_path,
                                 noiselevel=-1,
                             )
-                        missing_keys = []
-                        if not mycat:
-                            missing_keys.append("CATEGORY")
-                        if not mypf:
-                            missing_keys.append("PF")
-                        if not slot:
-                            missing_keys.append("SLOT")
-                        if invalid_errors:
+                            missing_keys = []
+                            if not mycat:
+                                missing_keys.append("CATEGORY")
+                            if not mypf:
+                                missing_keys.append("PF")
+                            if not slot:
+                                missing_keys.append("SLOT")
                             msg = []
                             if missing_keys:
                                 missing_keys.sort()
@@ -1100,7 +1101,6 @@ class binarytree:
                                     _("Missing metadata key(s): %s.")
                                     % ", ".join(missing_keys)
                                 )
-                        if invalid_errors:
                             msg.append(
                                 _(
                                     " This binary package is not "

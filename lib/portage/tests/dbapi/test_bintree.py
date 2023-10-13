@@ -47,6 +47,7 @@ class BinarytreeTestCase(TestCase):
             "_additional_pkgs",
             "invalids",
             "invalid_paths",
+            "invalid_errors",
             "settings",
             "_pkg_paths",
             "_populating",
@@ -87,7 +88,7 @@ class BinarytreeTestCase(TestCase):
         bt = binarytree(pkgdir=os.getenv("TMPDIR", "/tmp"), settings=MagicMock())
         ppopulate_local.return_value = {}
         bt.populate()
-        ppopulate_local.assert_called_once_with(reindex=True, invalid_errors=True)
+        ppopulate_local.assert_called_once_with(reindex=True)
         self.assertFalse(bt._populating)
         self.assertTrue(bt.populated)
 
@@ -95,9 +96,7 @@ class BinarytreeTestCase(TestCase):
     def test_populate_calls_twice_populate_local_if_updates(self, ppopulate_local):
         bt = binarytree(pkgdir=os.getenv("TMPDIR", "/tmp"), settings=MagicMock())
         bt.populate()
-        self.assertIn(
-            call(reindex=True, invalid_errors=True), ppopulate_local.mock_calls
-        )
+        self.assertIn(call(reindex=True), ppopulate_local.mock_calls)
         self.assertIn(call(), ppopulate_local.mock_calls)
         self.assertEqual(ppopulate_local.call_count, 2)
 
